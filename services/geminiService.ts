@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Safely access process.env to prevent "Uncaught ReferenceError: process is not defined" in browser
-const apiKey = (typeof process !== 'undefined' && process.env && process.env.API_KEY) || '';
+// Access process.env.API_KEY directly. Vite replaces 'process.env' with the env object during build.
+const apiKey = process.env.API_KEY || '';
 
 const PORTFOLIO_CONTEXT = `
 You are an AI Assistant representing MD SAHADAT HOSSEN SHIHAB, an AI Automation & Vibe Coding Specialist.
