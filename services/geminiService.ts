@@ -1,8 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Access process.env.API_KEY directly. Vite replaces 'process.env' with the env object during build.
-const apiKey = process.env.API_KEY || '';
-
 const PORTFOLIO_CONTEXT = `
 You are an AI Assistant representing MD SAHADAT HOSSEN SHIHAB, an AI Automation & Vibe Coding Specialist.
 Your goal is to answer questions about Shihab's skills, experience, and services professionally and concisely.
@@ -33,12 +30,12 @@ export const sendMessageToGemini = async (
   message: string, 
   history: { role: 'user' | 'model'; text: string }[]
 ): Promise<string> => {
-  if (!apiKey) {
+  if (!process.env.API_KEY) {
     return "I'm sorry, I cannot connect to the AI service at the moment (Missing API Key).";
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     // Transform history to format expected by API if needed, 
     // but for simple single-turn or short context, generateContent with system instruction is robust.
