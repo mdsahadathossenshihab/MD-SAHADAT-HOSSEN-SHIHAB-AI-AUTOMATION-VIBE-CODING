@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, LayoutDashboard, FileText, Settings, LogOut, Plus, Trash2, Search, AlertTriangle, Database, RefreshCw, ChevronRight, Pencil, Upload, Image as ImageIcon, Workflow, Copy, Terminal, ArrowRight, CloudOff } from 'lucide-react';
+import { X, LayoutDashboard, FileText, Settings, LogOut, Plus, Trash2, Search, AlertTriangle, Database, RefreshCw, ChevronRight, Pencil, Upload, Image as ImageIcon, Workflow, Copy, Terminal, ArrowRight, CloudOff, Bell } from 'lucide-react';
 import { AdminDashboardProps, BlogPost } from '../types';
 import { supabase, DEMO_POSTS } from '../services/supabaseClient';
 
@@ -433,7 +433,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
               <div className="border-b border-slate-200 pb-4">
                 <h1 className="text-3xl font-bold text-slate-900 mb-2">n8n Automation Setup</h1>
                 <p className="text-slate-600">
-                  Follow these 2 steps to connect your AI Agent (n8n) to your website database.
+                  Follow these steps to connect your AI Agent (n8n) to your website database and get phone notifications.
                 </p>
               </div>
 
@@ -538,6 +538,34 @@ create policy "Public Delete" on posts for delete using (true);`}
                         <div className="p-3 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 text-sm font-mono font-bold">image_url</div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: Notification Setup */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <Bell size={100} />
+                </div>
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-4">
+                     <div className="bg-slate-900 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                     <h3 className="text-xl font-bold text-slate-900">Get Phone Notifications</h3>
+                  </div>
+
+                  <p className="text-slate-600 text-sm mb-4">
+                    To get notified when a post is published, add a <b>OneSignal</b> node in n8n after your Supabase node.
+                  </p>
+
+                  <ul className="list-disc list-inside space-y-2 text-sm text-slate-700 ml-2">
+                    <li>Add <b>OneSignal</b> Node in n8n workflow.</li>
+                    <li>Set Resource: <b>Notification</b>, Operation: <b>Create</b>.</li>
+                    <li>App ID: <code>e763dde3-8968-44a2-94df-2cfa3df16c66</code></li>
+                    <li>Set Content: <code>New Post: &#123;&#123;json.title&#125;&#125;</code></li>
+                  </ul>
+                  
+                  <div className="mt-4 p-3 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-100">
+                    ✅ Make sure to click the "Bell Icon" on your website to subscribe to notifications first!
                   </div>
                 </div>
               </div>
