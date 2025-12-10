@@ -7,16 +7,13 @@ import { generateTranslation } from '../services/geminiService';
 
 export const SinglePost: React.FC<SinglePostProps> = ({ postId, initialPost, onBack, language, onToggleLanguage }) => {
   const [post, setPost] = useState<BlogPost | null>(initialPost || null);
-  // If we have initialPost, we are NOT loading. If we don't, we ARE loading.
   const [isLoading, setIsLoading] = useState(!initialPost);
   const [isTranslating, setIsTranslating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const t = translations[language].blog;
 
-  // Initial Fetch Logic
   useEffect(() => {
-    // If we already have the post data passed from props
     if (initialPost) {
       setPost(initialPost);
       setIsLoading(false);
@@ -48,7 +45,6 @@ export const SinglePost: React.FC<SinglePostProps> = ({ postId, initialPost, onB
         }
       } catch (err) {
         console.warn("Error fetching post from Supabase, checking demo data:", err);
-        // Fallback to Demo Data
         const demoPost = DEMO_POSTS.find(p => p.id.toString() === postId.toString());
         if (demoPost) {
           setPost(demoPost);
@@ -62,40 +58,67 @@ export const SinglePost: React.FC<SinglePostProps> = ({ postId, initialPost, onB
     fetchPost();
   }, [postId, initialPost]);
 
-  // Auto-Translation Logic
+  const containsBengali = (text: string) => /[\u0980-\u09FF]/.test(text);
+
+  // Auto-Translation with Summarization Check
   useEffect(() => {
-    if (language === 'bn' && post && !isTranslating) {
-      if (!post.title_bn || post.title_bn.trim() === '') {
-        performTranslation();
-      }
+    if (!post || isTranslating) return;
+
+    // Check BN content status
+    if (language === 'bn') {
+       const isMissing = !post.title_bn || post.title_bn.trim() === '';
+       // If BN exists but is suspiciously short compared to English source (e.g., < 40%), redo it.
+       const isShortSummary = post.excerpt_bn && post.excerpt.length > 100 && post.excerpt_bn.length < post.excerpt.length * 0.4;
+       
+       if (isMissing || isShortSummary) {
+         performTranslation('bn');
+       }
+    } 
+    // Check EN content status (if source was BN)
+    else if (language === 'en') {
+       // If current EN title is actually Bengali, translate it
+       if (post.title && containsBengali(post.title)) {
+         performTranslation('en');
+       }
     }
   }, [language, post]);
 
-  const performTranslation = async () => {
+  const performTranslation = async (targetLang: 'bn' | 'en') => {
     if (!post) return;
     setIsTranslating(true);
     
     try {
-      const translated = await generateTranslation(post.title, post.excerpt);
+      const translated = await generateTranslation(post.title, post.excerpt, targetLang);
       
       if (translated) {
-        setPost(prev => prev ? ({
-          ...prev,
-          title_bn: translated.title_bn,
-          excerpt_bn: translated.excerpt_bn
-        }) : null);
+        if (targetLang === 'bn') {
+           setPost(prev => prev ? ({
+            ...prev,
+            title_bn: translated.title_bn,
+            excerpt_bn: translated.excerpt_bn
+           }) : null);
+        } else {
+           setPost(prev => prev ? ({
+            ...prev,
+            title: translated.title,
+            excerpt: translated.excerpt,
+            title_bn: prev.title_bn || prev.title, 
+            excerpt_bn: prev.excerpt_bn || prev.excerpt
+           }) : null);
+        }
 
-        // Attempt silent save to DB (best effort)
-        supabase
-          .from('posts')
-          .update({ 
-            title_bn: translated.title_bn, 
-            excerpt_bn: translated.excerpt_bn 
-          })
-          .eq('id', post.id)
-          .then(({ error }) => {
-             if (error) console.warn("Background save failed:", error.message);
-          });
+        if (targetLang === 'bn') {
+          supabase
+            .from('posts')
+            .update({ 
+              title_bn: translated.title_bn, 
+              excerpt_bn: translated.excerpt_bn 
+            })
+            .eq('id', post.id)
+            .then(({ error }) => {
+              if (error) console.warn("Background save failed:", error.message);
+            });
+        }
       }
     } catch (error) {
       console.error("Single post translation failed", error);
@@ -127,7 +150,6 @@ export const SinglePost: React.FC<SinglePostProps> = ({ postId, initialPost, onB
     );
   }
 
-  // Determine content based on language
   const hasBengali = post.title_bn && post.title_bn.trim() !== '';
   const showBengali = language === 'bn' && hasBengali;
 
@@ -136,7 +158,6 @@ export const SinglePost: React.FC<SinglePostProps> = ({ postId, initialPost, onB
 
   return (
     <div className="min-h-screen bg-white text-slate-900 pb-20 animate-in fade-in duration-300">
-      {/* Navbar Placeholder for Back Button */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4 flex justify-between items-center">
         <button 
           onClick={onBack}
@@ -146,7 +167,6 @@ export const SinglePost: React.FC<SinglePostProps> = ({ postId, initialPost, onB
         </button>
 
         <div className="flex items-center gap-3">
-          {/* Language Toggle */}
           {onToggleLanguage && (
             <button 
               onClick={onToggleLanguage}
@@ -159,11 +179,10 @@ export const SinglePost: React.FC<SinglePostProps> = ({ postId, initialPost, onB
             </button>
           )}
           
-          {/* Translation Status */}
-          {language === 'bn' && isTranslating && (
+          {isTranslating && (
              <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold animate-pulse">
                 <Loader2 size={12} className="animate-spin" />
-                Translating...
+                {language === 'bn' ? 'Translating to BN...' : 'Translating to EN...'}
              </div>
           )}
 

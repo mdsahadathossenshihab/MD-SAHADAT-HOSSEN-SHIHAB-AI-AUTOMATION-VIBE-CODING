@@ -55,18 +55,46 @@ export const sendMessageToGemini = async (
   }
 };
 
-export const generateTranslation = async (title: string, content: string): Promise<{ title_bn: string, excerpt_bn: string } | null> => {
+export const generateTranslation = async (
+  title: string, 
+  content: string, 
+  targetLanguage: 'bn' | 'en' = 'bn'
+): Promise<any | null> => {
   if (!process.env.API_KEY) return null;
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `Translate the following Blog Post content from English to Bengali (Bangla). 
-    Ensure the translation is professional, engaging, and suitable for a tech blog.
     
-    English Title: ${title}
-    English Content: ${content}
-    
-    Return the result strictly as a JSON object with keys "title_bn" and "excerpt_bn". Do not add Markdown code blocks.`;
+    let prompt = "";
+
+    // STRICT INSTRUCTIONS TO PREVENT SUMMARIZATION
+    if (targetLanguage === 'bn') {
+      prompt = `CRITICAL INSTRUCTION: You are a professional translator. Translate the Blog Post content below from English to Bengali (Bangla).
+      
+      RULES:
+      1. Translate the FULL content word-for-word.
+      2. Do NOT summarize. Do NOT shorten. Do NOT leave out any paragraphs.
+      3. Maintain the original length. If the input is long, the output MUST be long.
+      4. Return the result strictly as a valid JSON object.
+
+      Original Title: ${title}
+      Original Content: ${content}
+      
+      Output JSON Format: { "title_bn": "...", "excerpt_bn": "..." }`;
+    } else {
+      prompt = `CRITICAL INSTRUCTION: You are a professional translator. Translate the Blog Post content below from Bengali to English.
+      
+      RULES:
+      1. Translate the FULL content word-for-word.
+      2. Do NOT summarize. Do NOT shorten. Do NOT leave out any paragraphs.
+      3. Maintain the original length. If the input is long, the output MUST be long.
+      4. Return the result strictly as a valid JSON object.
+
+      Original Title: ${title}
+      Original Content: ${content}
+      
+      Output JSON Format: { "title": "...", "excerpt": "..." }`;
+    }
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',

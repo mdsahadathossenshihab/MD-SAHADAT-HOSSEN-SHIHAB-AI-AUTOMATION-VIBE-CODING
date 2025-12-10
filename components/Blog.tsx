@@ -7,7 +7,6 @@ import { generateTranslation } from '../services/geminiService';
 
 export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = false, onViewAll, onBack, language, onToggleLanguage }) => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
-  // Start loading true initially, but never set it to true again during background refreshes
   const [isLoading, setIsLoading] = useState(true);
   const [usingDemoData, setUsingDemoData] = useState(false);
   
@@ -17,79 +16,95 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
   const t = translations[language].blog;
 
   useEffect(() => {
-    // Initial fetch
     fetchPosts();
-
-    // Set up polling interval if admin
     let interval: ReturnType<typeof setInterval> | null = null;
-    
     if (isAdmin) {
       interval = setInterval(() => {
-        // We call a version of fetch that purely updates data without triggering loading state
         fetchPosts(true); 
       }, 5000);
     }
-
-    return () => { 
-      if (interval) clearInterval(interval); 
-    };
+    return () => { if (interval) clearInterval(interval); };
   }, [isAdmin]);
 
-  // Effect to handle Auto-Translation when language is BN
+  // Effect to handle Auto-Translation (Bidirectional)
   useEffect(() => {
-    if (language === 'bn' && posts.length > 0) {
+    if (posts.length > 0) {
       handleAutoTranslation();
     }
   }, [language, posts]);
 
-  const handleAutoTranslation = async () => {
-    // Find posts that don't have Bengali title yet and aren't currently being translated
-    const postsToTranslate = posts.filter(p => 
-      (!p.title_bn || p.title_bn.trim() === '') && 
-      !translatingIds.includes(p.id)
-    );
+  // Regex to check for Bengali characters
+  const containsBengali = (text: string) => /[\u0980-\u09FF]/.test(text);
 
-    // If we have posts to translate, process them
+  // Helper to check if a translation looks suspiciously short (Summary detection)
+  const isSuspiciouslyShort = (original: string, translated?: string) => {
+    if (!translated || translated.trim() === '') return true; // Missing
+    // If original is substantial (>100 chars) but translation is less than 40% of length, it's likely a summary.
+    if (original.length > 100 && translated.length < original.length * 0.4) return true;
+    return false;
+  };
+
+  const handleAutoTranslation = async () => {
+    let postsToTranslate: BlogPost[] = [];
+    let targetLang: 'bn' | 'en' = 'bn';
+
+    if (language === 'bn') {
+      targetLang = 'bn';
+      // Find posts needing BN translation OR having a bad summary translation
+      postsToTranslate = posts.filter(p => 
+        (isSuspiciouslyShort(p.excerpt, p.excerpt_bn)) && 
+        !translatingIds.includes(p.id)
+      );
+    } else {
+      targetLang = 'en';
+      // Find posts needing EN translation (title is BN)
+      postsToTranslate = posts.filter(p => 
+        p.title && containsBengali(p.title) &&
+        !translatingIds.includes(p.id)
+      );
+    }
+
     if (postsToTranslate.length > 0) {
-      // Mark them as translating
       const newIds = postsToTranslate.map(p => p.id);
       setTranslatingIds(prev => [...prev, ...newIds]);
 
-      // Process each post
       for (const post of postsToTranslate) {
         try {
-          const translated = await generateTranslation(post.title, post.excerpt);
+          const translated = await generateTranslation(post.title, post.excerpt, targetLang);
           
           if (translated) {
-            // Update local state immediately
             setPosts(prevPosts => prevPosts.map(p => {
               if (p.id === post.id) {
-                return {
-                  ...p,
-                  title_bn: translated.title_bn,
-                  excerpt_bn: translated.excerpt_bn
-                };
+                if (targetLang === 'bn') {
+                  return {
+                    ...p,
+                    title_bn: translated.title_bn,
+                    excerpt_bn: translated.excerpt_bn
+                  };
+                } else {
+                  return {
+                    ...p,
+                    title: translated.title,
+                    excerpt: translated.excerpt,
+                    title_bn: p.title_bn || p.title,
+                    excerpt_bn: p.excerpt_bn || p.excerpt
+                  };
+                }
               }
               return p;
             }));
 
-            // Optional: Try to save to DB if we have permission (Admin) or if RLS allows
-            // We do this silently in the background
-            supabase
-              .from('posts')
-              .update({ 
-                title_bn: translated.title_bn, 
-                excerpt_bn: translated.excerpt_bn 
-              })
-              .eq('id', post.id)
-              .then(({ error }) => {
-                 if (error) console.warn("Could not save translation to DB (likely need Admin)", error.message);
-              });
+            // Silent update to DB
+            if (targetLang === 'bn') {
+                supabase.from('posts').update({ 
+                  title_bn: translated.title_bn, 
+                  excerpt_bn: translated.excerpt_bn 
+                }).eq('id', post.id).then(() => {});
+            }
           }
         } catch (error) {
           console.error(`Failed to translate post ${post.id}`, error);
         } finally {
-           // Remove from translating list
            setTranslatingIds(prev => prev.filter(id => id !== post.id));
         }
       }
@@ -98,7 +113,6 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
 
   const fetchPosts = async (isBackgroundRefresh = false) => {
     try {
-      // Only show loader on the very first mount/call, not on background refreshes
       if (!isBackgroundRefresh && posts.length === 0) {
         setIsLoading(true);
       }
@@ -124,26 +138,20 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
         setPosts(formattedData);
         setUsingDemoData(false);
       } else {
-        // If no data in DB, use demo data
         setPosts(DEMO_POSTS);
         setUsingDemoData(true);
       }
     } catch (err: any) {
-      // Silent fail in console, fallback to demo
       console.warn('Supabase fetch failed:', err.message);
-      // Only set demo data if we don't have posts yet
       setPosts((prev) => prev.length > 0 ? prev : DEMO_POSTS);
       setUsingDemoData(true);
     } finally {
-      // Always turn off loading, but never turn it back on in this function
       setIsLoading(false);
     }
   };
 
-  // Determine displayed posts based on view mode
   const displayedPosts = isFullView ? posts : posts.slice(0, 3);
 
-  // Skeleton Card Component
   const BlogSkeleton = () => (
     <div className="bg-slate-50 rounded-3xl p-4 border border-slate-100 h-full flex flex-col">
       <div className="h-48 bg-slate-200 rounded-2xl mb-5 animate-pulse"></div>
@@ -158,7 +166,6 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
         <div className="space-y-2 mb-6">
           <div className="h-3 w-full bg-slate-200 rounded animate-pulse"></div>
           <div className="h-3 w-full bg-slate-200 rounded animate-pulse"></div>
-          <div className="h-3 w-2/3 bg-slate-200 rounded animate-pulse"></div>
         </div>
         
         <div className="mt-auto pt-4 border-t border-slate-100">
@@ -172,7 +179,6 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
     <section id="blog" className={`py-12 relative z-10 ${isFullView ? 'min-h-screen pt-10' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         
-        {/* Full View Navigation */}
         {isFullView && (
           <nav className="mb-8 flex items-center justify-between">
             <button 
@@ -183,7 +189,6 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
             </button>
             
             <div className="flex items-center gap-4">
-              {/* Language Toggle in Archive View */}
               {onToggleLanguage && (
                 <button 
                   onClick={onToggleLanguage}
@@ -200,7 +205,6 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
           </nav>
         )}
 
-        {/* Container */}
         <div className={`bg-white rounded-[40px] p-8 md:p-16 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden ${isFullView ? 'min-h-[80vh]' : ''}`}>
           
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6 relative z-10">
@@ -216,7 +220,6 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
               </h2>
             </div>
             
-            {/* View All Button - Only visible on Homepage (isFullView=false) and if there are more than 3 posts */}
             {!isFullView && posts.length > 3 && (
               <div className="hidden md:block">
                  <button 
@@ -236,10 +239,8 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
              </div>
           )}
 
-          {/* Posts Grid */}
           <div className="grid md:grid-cols-3 gap-8">
             {isLoading ? (
-              // Show Skeletons
               <>
                 <BlogSkeleton />
                 <BlogSkeleton />
@@ -247,11 +248,8 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
               </>
             ) : displayedPosts.length > 0 ? (
               displayedPosts.map((post) => {
-                // Determine content based on language
                 const isTranslating = translatingIds.includes(post.id);
                 const hasBengali = post.title_bn && post.title_bn.trim() !== '';
-                
-                // Show Bengali if: Language is BN AND (We have Bengali OR we are currently translating to avoid flicker)
                 const showBengali = language === 'bn' && hasBengali;
                 
                 const displayTitle = showBengali ? post.title_bn : post.title;
@@ -285,11 +283,10 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
                           {post.date}
                         </div>
                         
-                        {/* Translation Indicator */}
-                        {language === 'bn' && !hasBengali && isTranslating && (
+                        {isTranslating && (
                            <div className="flex items-center gap-1 text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-full animate-pulse">
                               <Loader2 size={10} className="animate-spin" />
-                              Translating...
+                              {language === 'bn' ? 'Translating to BN...' : 'Translating to EN...'}
                            </div>
                         )}
                       </div>
@@ -319,7 +316,6 @@ export const Blog: React.FC<BlogProps> = ({ isAdmin, onPostClick, isFullView = f
             )}
           </div>
           
-          {/* Mobile View All Button (Bottom) */}
           {!isFullView && posts.length > 3 && (
             <div className="mt-8 md:hidden text-center">
                <button 
