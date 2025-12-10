@@ -1,5 +1,7 @@
 import React from 'react';
 
+export type Language = 'en' | 'bn';
+
 export interface Service {
   title: string;
   description: string;
@@ -26,10 +28,14 @@ export interface BlogPost {
   date: string;
   category: string;
   image_url?: string;
+  // Optional multilingual fields
+  title_bn?: string;
+  excerpt_bn?: string;
 }
 
 export interface GeminiChatProps {
   onAdminTrigger: () => void;
+  language: Language;
 }
 
 export interface BlogProps {
@@ -38,6 +44,8 @@ export interface BlogProps {
   isFullView?: boolean;
   onViewAll?: () => void;
   onBack?: () => void;
+  language: Language;
+  onToggleLanguage?: () => void;
 }
 
 export interface AdminDashboardProps {
@@ -50,6 +58,8 @@ export interface SinglePostProps {
   postId: string;
   initialPost?: BlogPost | null;
   onBack: () => void;
+  language: Language;
+  onToggleLanguage?: () => void;
 }
 
 export enum SectionId {
@@ -59,4 +69,20 @@ export enum SectionId {
   BLOG = 'blog',
   CONTACT = 'contact',
   AI_CHAT = 'ai-chat'
+}
+
+export interface HeroProps {
+  language: Language;
+}
+
+export interface ServicesProps {
+  language: Language;
+}
+
+export interface ExperienceProps {
+  language: Language;
+}
+
+export interface ContactProps {
+  language: Language;
 }

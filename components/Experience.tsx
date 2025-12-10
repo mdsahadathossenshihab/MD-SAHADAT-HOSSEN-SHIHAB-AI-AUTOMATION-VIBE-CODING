@@ -1,7 +1,11 @@
 import React from 'react';
 import { Award, Zap, ExternalLink, Mail, LayoutTemplate, Workflow, Bot } from 'lucide-react';
+import { ExperienceProps } from '../types';
+import { translations } from '../utils/translations';
 
-export const Experience: React.FC = () => {
+export const Experience: React.FC<ExperienceProps> = ({ language }) => {
+  const t = translations[language].experience;
+
   return (
     <section id="experience" className="py-12 relative z-10">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
@@ -19,15 +23,15 @@ export const Experience: React.FC = () => {
                   <Award size={32} />
                 </div>
                 <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-wider font-mono">
-                  Founder
+                  {t.founder_badge}
                 </span>
               </div>
               
               <h3 className="text-4xl font-black text-slate-900 mb-1 tracking-tight">AutoMateIQ</h3>
-              <p className="text-indigo-600 font-bold mb-6 text-lg tracking-wide uppercase font-mono">AI Automation Agency</p>
+              <p className="text-indigo-600 font-bold mb-6 text-lg tracking-wide uppercase font-mono">{t.agency_role}</p>
               
               <p className="text-slate-600 leading-relaxed mb-10 text-lg font-medium">
-                Leading the charge in autonomous business flows. We replace manual grunt work with intelligent, self-healing AI Agents and n8n workflows.
+                {t.agency_desc}
               </p>
 
               <div className="mt-auto">
@@ -37,7 +41,7 @@ export const Experience: React.FC = () => {
                   rel="noopener noreferrer"
                   className="flex items-center justify-between w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all group/link"
                 >
-                  <span className="font-bold">Visit Agency Website</span>
+                  <span className="font-bold">{t.visit_agency}</span>
                   <ExternalLink size={16} />
                 </a>
               </div>
@@ -52,7 +56,7 @@ export const Experience: React.FC = () => {
               <div className="mb-8 w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
                 <Zap size={32} />
               </div>
-              <h3 className="text-4xl font-black text-slate-900 mb-8 tracking-tight">Tech Stack</h3>
+              <h3 className="text-4xl font-black text-slate-900 mb-8 tracking-tight">{t.tech_stack_title}</h3>
               
               <div className="space-y-8">
                 
@@ -60,7 +64,7 @@ export const Experience: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-3 text-slate-900 font-bold mb-4 text-lg">
                     <Workflow size={20} className="text-indigo-600" />
-                    <span>Automation & Agents</span>
+                    <span>{t.stack_automation}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {['n8n', 'Google Gemini', 'OpenAI', 'Apify', 'ElevenLabs', 'MCP Server'].map(skill => (
@@ -75,7 +79,7 @@ export const Experience: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-3 text-slate-900 font-bold mb-4 text-lg">
                     <LayoutTemplate size={20} className="text-violet-600" />
-                    <span>Vibe Coding & Data</span>
+                    <span>{t.stack_dev}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {['Vibe Code', 'React', 'Next.js', 'Supabase', 'Pinecone'].map(skill => (
@@ -99,10 +103,10 @@ export const Experience: React.FC = () => {
             <div className="relative z-10 text-center md:text-left">
               <h3 className="text-3xl font-bold text-white mb-2 flex flex-col md:flex-row items-center gap-3">
                 <Bot className="text-cyan-400" size={32} />
-                <span>Ready to automate your business?</span>
+                <span>{t.cta_title}</span>
               </h3>
               <p className="text-slate-400 font-medium text-lg max-w-xl">
-                I build advanced SaaS tools and Autonomous Agents. Check my portfolio or request a live demo.
+                {t.cta_desc}
               </p>
             </div>
 
@@ -112,7 +116,7 @@ export const Experience: React.FC = () => {
                 className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-900/50"
               >
                 <Mail size={18} />
-                Request Demo
+                {t.req_demo}
               </a>
               <a 
                 href="https://drive.google.com/drive/folders/1JNeuN5ZTU0Ai5mhU0CG7tIziampylqEf"
@@ -121,7 +125,7 @@ export const Experience: React.FC = () => {
                 className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 px-8 py-4 rounded-2xl font-bold transition-colors"
               >
                 <ExternalLink size={18} />
-                Certificates
+                {t.certificates}
               </a>
             </div>
           </div>

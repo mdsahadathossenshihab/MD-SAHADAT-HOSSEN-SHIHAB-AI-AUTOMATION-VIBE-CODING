@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, LayoutDashboard, FileText, Settings, LogOut, Plus, Trash2, Search, AlertTriangle, Database, RefreshCw, ChevronRight, Pencil, Upload, Image as ImageIcon, Workflow, Copy, Terminal, ArrowRight, CloudOff, Bell } from 'lucide-react';
+import { X, LayoutDashboard, FileText, Settings, LogOut, Plus, Trash2, Search, AlertTriangle, Database, RefreshCw, ChevronRight, Pencil, Upload, Image as ImageIcon, Workflow, Copy, Terminal, ArrowRight, CloudOff, Bell, Key, Sparkles, Languages } from 'lucide-react';
 import { AdminDashboardProps, BlogPost } from '../types';
 import { supabase, DEMO_POSTS } from '../services/supabaseClient';
+import { generateTranslation } from '../services/geminiService';
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'posts' | 'automation' | 'settings'>('overview');
@@ -13,9 +14,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
   
   // Post State (Create/Edit)
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [postForm, setPostForm] = useState({ title: '', category: '', excerpt: '', image_url: '' });
+  const [postForm, setPostForm] = useState({ 
+    title: '', 
+    category: '', 
+    excerpt: '', 
+    image_url: '',
+    title_bn: '',
+    excerpt_bn: ''
+  });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
   
   // Error Handling
   const [rlsError, setRlsError] = useState<string | null>(null);
@@ -44,15 +53,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
           category: item.category,
           excerpt: item.excerpt,
           date: item.date || new Date(item.created_at).toLocaleDateString(),
-          image_url: item.image_url
+          image_url: item.image_url,
+          title_bn: item.title_bn,
+          excerpt_bn: item.excerpt_bn
         }));
         setPosts(formattedData);
       } else {
         // Fallback or empty state
          if (!data || data.length === 0) {
-           // We can show empty, or show demo posts if we want admin to see them too.
-           // For admin, usually showing 'No Posts' is better if DB is truly empty, 
-           // but if connection fails, we show demo.
            setPosts([]); 
          }
       }
@@ -72,7 +80,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
       return;
     }
     setEditingId(null);
-    setPostForm({ title: '', category: '', excerpt: '', image_url: '' });
+    setPostForm({ title: '', category: '', excerpt: '', image_url: '', title_bn: '', excerpt_bn: '' });
     setSelectedImage(null);
     setImagePreview(null);
     setShowAddModal(true);
@@ -88,7 +96,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
       title: post.title,
       category: post.category,
       excerpt: post.excerpt,
-      image_url: post.image_url || ''
+      image_url: post.image_url || '',
+      title_bn: post.title_bn || '',
+      excerpt_bn: post.excerpt_bn || ''
     });
     setImagePreview(post.image_url || null);
     setSelectedImage(null);
@@ -100,6 +110,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
       const file = e.target.files[0];
       setSelectedImage(file);
       setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleAutoTranslate = async () => {
+    if (!postForm.title || !postForm.excerpt) {
+      alert("Please enter English Title and Content first.");
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const translated = await generateTranslation(postForm.title, postForm.excerpt);
+      
+      if (translated) {
+        setPostForm(prev => ({
+          ...prev,
+          title_bn: translated.title_bn,
+          excerpt_bn: translated.excerpt_bn
+        }));
+      } else {
+        alert("Translation failed. Please check your API Key.");
+      }
+    } catch (error) {
+      console.error("Translation failed", error);
+      alert("Failed to auto-translate.");
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -151,16 +188,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
 
       let error;
       
+      const payload = {
+        title: postForm.title, 
+        category: postForm.category || 'General', 
+        excerpt: postForm.excerpt,
+        image_url: finalImageUrl,
+        title_bn: postForm.title_bn,
+        excerpt_bn: postForm.excerpt_bn
+      };
+
       if (editingId) {
         // UPDATE Existing Post
         const { error: updateError } = await supabase
           .from('posts')
-          .update({ 
-            title: postForm.title, 
-            category: postForm.category || 'General', 
-            excerpt: postForm.excerpt,
-            image_url: finalImageUrl
-          })
+          .update(payload)
           .eq('id', editingId);
         error = updateError;
       } else {
@@ -168,11 +209,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
         const { error: insertError } = await supabase
           .from('posts')
           .insert([{ 
-              title: postForm.title, 
-              category: postForm.category || 'General', 
-              excerpt: postForm.excerpt,
-              date: currentDate,
-              image_url: finalImageUrl
+              ...payload,
+              date: currentDate
             }]);
         error = insertError;
       }
@@ -180,7 +218,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
       if (error) throw error;
       
       setShowAddModal(false);
-      setPostForm({ title: '', category: '', excerpt: '', image_url: '' });
+      setPostForm({ title: '', category: '', excerpt: '', image_url: '', title_bn: '', excerpt_bn: '' });
       setSelectedImage(null);
       setImagePreview(null);
       setEditingId(null);
@@ -395,7 +433,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                                 )}
                               </div>
                             </td>
-                            <td className="p-4 font-bold text-slate-900">{post.title}</td>
+                            <td className="p-4 font-bold text-slate-900">
+                              {post.title}
+                              {post.title_bn && <div className="text-xs text-slate-500 font-normal">{post.title_bn}</div>}
+                            </td>
                             <td className="p-4">
                               <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-bold">{post.category}</span>
                             </td>
@@ -449,7 +490,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                   </div>
                   
                   <p className="text-slate-600 text-sm mb-4">
-                    Copy the code below, go to your Supabase <b>SQL Editor</b>, paste it, and click <b>RUN</b>. This creates the 'posts' table with the correct columns.
+                    Copy the code below, go to your Supabase <b>SQL Editor</b>, paste it, and click <b>RUN</b>. This creates the 'posts' table with the correct columns, including support for Bengali.
                   </p>
 
                   <div className="bg-slate-900 text-slate-300 p-4 rounded-xl text-xs font-mono relative group">
@@ -461,6 +502,8 @@ create table if not exists posts (
   excerpt text not null,
   category text default 'General',
   image_url text,
+  title_bn text,
+  excerpt_bn text,
   date text default to_char(now(), 'Mon DD, YYYY'),
   created_at timestamptz default now()
 );
@@ -483,6 +526,8 @@ create policy "Public Delete" on posts for delete using (true);
   excerpt text not null,
   category text default 'General',
   image_url text,
+  title_bn text,
+  excerpt_bn text,
   date text default to_char(now(), 'Mon DD, YYYY'),
   created_at timestamptz default now()
 );
@@ -570,6 +615,42 @@ create policy "Public Delete" on posts for delete using (true);`}
                 </div>
               </div>
 
+               {/* Step 4: AI Key Setup */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <Key size={100} />
+                </div>
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-4">
+                     <div className="bg-slate-900 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">4</div>
+                     <h3 className="text-xl font-bold text-slate-900">Get AI API Keys</h3>
+                  </div>
+
+                  <p className="text-slate-600 text-sm mb-4">
+                    To use AI Agents in n8n, you need an API key. 
+                  </p>
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-colors group">
+                       <div>
+                         <div className="font-bold text-blue-900">Google Gemini API</div>
+                         <div className="text-xs text-blue-600">Free & High Quality</div>
+                       </div>
+                       <ExternalLinkIcon className="text-blue-400 group-hover:text-blue-600" />
+                    </a>
+                    
+                    <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 bg-green-50 border border-green-100 rounded-xl hover:bg-green-100 transition-colors group">
+                       <div>
+                         <div className="font-bold text-green-900">OpenAI API</div>
+                         <div className="text-xs text-green-600">Standard (Paid)</div>
+                       </div>
+                       <ExternalLinkIcon className="text-green-400 group-hover:text-green-600" />
+                    </a>
+                  </div>
+
+                </div>
+              </div>
+
               {/* API Info */}
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex gap-3">
                  <AlertTriangle className="text-yellow-600 shrink-0" size={20} />
@@ -632,37 +713,82 @@ create policy "Public Delete" on posts for delete using (true);`}
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              {/* English Section */}
+              <div className="p-4 border border-slate-100 rounded-xl bg-slate-50/50">
+                 <div className="mb-4 flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span> English Content (Default)
+                 </div>
+                 <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">Title</label>
+                      <input 
+                        required
+                        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-bold text-slate-900" 
+                        placeholder="e.g. The Future of Agents"
+                        value={postForm.title}
+                        onChange={e => setPostForm({...postForm, title: e.target.value})}
+                      />
+                  </div>
+                  <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">Category</label>
+                      <input 
+                        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-none" 
+                        placeholder="e.g. Automation"
+                        value={postForm.category}
+                        onChange={e => setPostForm({...postForm, category: e.target.value})}
+                      />
+                  </div>
+                </div>
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Title</label>
-                    <input 
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Content</label>
+                    <textarea 
                       required
-                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-bold text-slate-900" 
-                      placeholder="e.g. The Future of Agents"
-                      value={postForm.title}
-                      onChange={e => setPostForm({...postForm, title: e.target.value})}
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Category</label>
-                    <input 
-                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none" 
-                      placeholder="e.g. Automation"
-                      value={postForm.category}
-                      onChange={e => setPostForm({...postForm, category: e.target.value})}
+                      className="w-full h-32 p-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-none resize-none" 
+                      placeholder="Write your article content here..."
+                      value={postForm.excerpt}
+                      onChange={e => setPostForm({...postForm, excerpt: e.target.value})}
                     />
                 </div>
               </div>
-              <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Content</label>
-                  <textarea 
-                    required
-                    className="w-full h-40 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none resize-none" 
-                    placeholder="Write your article content here..."
-                    value={postForm.excerpt}
-                    onChange={e => setPostForm({...postForm, excerpt: e.target.value})}
-                  />
+
+              {/* Bengali Section */}
+               <div className="p-4 border border-slate-100 rounded-xl bg-slate-50/50">
+                 <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                      <span className="w-2 h-2 rounded-full bg-green-500"></span> Bengali Content (Optional)
+                    </div>
+                    
+                    <button 
+                      type="button"
+                      onClick={handleAutoTranslate}
+                      disabled={isTranslating || !postForm.title || !postForm.excerpt}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg hover:bg-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isTranslating ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                      {isTranslating ? 'Translating...' : 'Auto-Translate with AI'}
+                    </button>
+                 </div>
+                 
+                 <div className="mb-4">
+                      <label className="block text-sm font-bold text-slate-700 mb-1">Title (Bengali)</label>
+                      <input 
+                        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-bold text-slate-900" 
+                        placeholder="Auto-generated or type manually..."
+                        value={postForm.title_bn}
+                        onChange={e => setPostForm({...postForm, title_bn: e.target.value})}
+                      />
+                  </div>
+                  <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">Content (Bengali)</label>
+                      <textarea 
+                        className="w-full h-32 p-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-none resize-none" 
+                        placeholder="Auto-generated or type manually..."
+                        value={postForm.excerpt_bn}
+                        onChange={e => setPostForm({...postForm, excerpt_bn: e.target.value})}
+                      />
+                  </div>
               </div>
+
               <div className="flex justify-end pt-4">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-6 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl mr-2">Cancel</button>
                 <button 
@@ -681,3 +807,11 @@ create policy "Public Delete" on posts for delete using (true);`}
     </div>
   );
 };
+
+const ExternalLinkIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+    <polyline points="15 3 21 3 21 9"></polyline>
+    <line x1="10" y1="14" x2="21" y2="3"></line>
+  </svg>
+);

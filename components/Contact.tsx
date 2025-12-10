@@ -1,14 +1,18 @@
 import React from 'react';
 import { Linkedin, Facebook, Twitter, Mail } from 'lucide-react';
+import { ContactProps } from '../types';
+import { translations } from '../utils/translations';
 
-export const Contact: React.FC = () => {
+export const Contact: React.FC<ContactProps> = ({ language }) => {
+  const t = translations[language].contact;
+
   return (
     <footer id="contact" className="py-12 relative z-10 bg-white border-t border-slate-100">
       <div className="max-w-7xl mx-auto px-6 flex flex-col items-center">
         
         <div className="mb-10 text-center">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Connect on Socials</h2>
-            <p className="text-slate-500 text-sm">Follow for updates on AI & Automation</p>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">{t.title}</h2>
+            <p className="text-slate-500 text-sm">{t.subtitle}</p>
         </div>
 
         <div className="flex gap-6 mb-12">
@@ -50,7 +54,7 @@ export const Contact: React.FC = () => {
 
         <div className="text-center">
           <p className="text-slate-400 text-xs font-medium tracking-widest uppercase">
-            © {new Date().getFullYear()} MD SAHADAT HOSSEN SHIHAB. All Rights Reserved.
+            © {new Date().getFullYear()} MD SAHADAT HOSSEN SHIHAB. {t.copyright}
           </p>
         </div>
       </div>

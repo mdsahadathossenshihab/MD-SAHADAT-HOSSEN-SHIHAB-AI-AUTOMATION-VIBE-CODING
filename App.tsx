@@ -6,14 +6,18 @@ import { Contact } from './components/Contact';
 import { GeminiChat } from './components/GeminiChat';
 import { AdminDashboard } from './components/AdminDashboard';
 import { SinglePost } from './components/SinglePost';
-import { X, Lock, LayoutDashboard } from 'lucide-react';
-import { BlogPost } from './types';
+import { X, Lock, LayoutDashboard, Globe } from 'lucide-react';
+import { BlogPost, Language } from './types';
+import { translations } from './utils/translations';
 
 const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   
+  // Language State
+  const [language, setLanguage] = useState<Language>('en');
+
   // Changed logic: Store the full post object for instant load
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   // Keep track of ID for URL handling if refreshed
@@ -25,6 +29,8 @@ const App: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+
+  const t = translations[language];
 
   // Check URL for ?post=ID on load
   useEffect(() => {
@@ -39,6 +45,10 @@ const App: React.FC = () => {
       setIsAdmin(true);
     }
   }, []);
+
+  const toggleLanguage = () => {
+    setLanguage(prev => prev === 'en' ? 'bn' : 'en');
+  };
 
   const handlePostClick = (post: BlogPost) => {
     // Instant load by setting the object directly
@@ -96,6 +106,8 @@ const App: React.FC = () => {
         postId={viewPostId || (selectedPost?.id.toString() || '')} 
         initialPost={selectedPost} // Pass the data we already have!
         onBack={handleBackToHome} 
+        language={language}
+        onToggleLanguage={toggleLanguage}
       />
     );
   }
@@ -109,6 +121,8 @@ const App: React.FC = () => {
           onPostClick={handlePostClick} 
           isFullView={true} 
           onBack={handleBackToHome}
+          language={language}
+          onToggleLanguage={toggleLanguage}
         />
       </div>
     );
@@ -128,7 +142,7 @@ const App: React.FC = () => {
             <div className="hidden md:flex flex-col justify-center">
               <span className="font-bold text-slate-900 leading-tight">MD SAHADAT HOSSEN SHIHAB</span>
               <span className="text-[10px] font-bold tracking-widest text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded-full w-fit mt-1 border border-indigo-100">
-                AI Automation Expert
+                {t.nav.expert_badge}
               </span>
             </div>
             
@@ -140,11 +154,26 @@ const App: React.FC = () => {
             )}
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6">
           <div className="hidden md:flex gap-8 text-sm font-bold text-slate-600">
-            <button onClick={() => document.getElementById('experience')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-indigo-600 transition-colors uppercase tracking-wider text-xs">Profile</button>
-            <button onClick={() => document.getElementById('blog')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-indigo-600 transition-colors uppercase tracking-wider text-xs">Insights</button>
+            <button onClick={() => document.getElementById('experience')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-indigo-600 transition-colors uppercase tracking-wider text-xs">
+              {t.nav.profile}
+            </button>
+            <button onClick={() => document.getElementById('blog')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-indigo-600 transition-colors uppercase tracking-wider text-xs">
+              {t.nav.insights}
+            </button>
           </div>
+
+          {/* Language Toggle */}
+          <button 
+            onClick={toggleLanguage}
+            className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold transition-colors border border-slate-200"
+          >
+            <Globe size={14} className="text-slate-600" />
+            <span className={language === 'en' ? 'text-indigo-600' : 'text-slate-500'}>EN</span>
+            <span className="text-slate-300">|</span>
+            <span className={language === 'bn' ? 'text-indigo-600' : 'text-slate-500'}>BN</span>
+          </button>
           
           {isAdmin && (
             <button 
@@ -152,15 +181,15 @@ const App: React.FC = () => {
               className="flex items-center gap-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-4 py-2 rounded-xl transition-all shadow-lg shadow-slate-200"
             >
               <LayoutDashboard size={14} />
-              PANEL
+              {t.nav.panel}
             </button>
           )}
         </div>
       </nav>
 
       <main className="relative z-10 pt-24">
-        <Hero />
-        <Experience />
+        <Hero language={language} />
+        <Experience language={language} />
         <Blog 
           isAdmin={isAdmin} 
           onPostClick={handlePostClick} 
@@ -169,11 +198,12 @@ const App: React.FC = () => {
             setViewAllPosts(true);
             window.scrollTo(0, 0);
           }}
+          language={language}
         />
-        <Contact />
+        <Contact language={language} />
       </main>
 
-      <GeminiChat onAdminTrigger={handleAdminTrigger} />
+      <GeminiChat onAdminTrigger={handleAdminTrigger} language={language} />
 
       {/* Admin Dashboard Overlay */}
       <AdminDashboard 

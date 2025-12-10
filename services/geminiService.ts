@@ -37,10 +37,6 @@ export const sendMessageToGemini = async (
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    // Transform history to format expected by API if needed, 
-    // but for simple single-turn or short context, generateContent with system instruction is robust.
-    
-    // We will construct a prompt that includes the history for context awareness
     const historyText = history.map(h => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.text}`).join('\n');
     const prompt = `${historyText}\nUser: ${message}\nAssistant:`;
 
@@ -56,5 +52,36 @@ export const sendMessageToGemini = async (
   } catch (error) {
     console.error("Gemini API Error:", error);
     return "I encountered an error while processing your request. Please try again later.";
+  }
+};
+
+export const generateTranslation = async (title: string, content: string): Promise<{ title_bn: string, excerpt_bn: string } | null> => {
+  if (!process.env.API_KEY) return null;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `Translate the following Blog Post content from English to Bengali (Bangla). 
+    Ensure the translation is professional, engaging, and suitable for a tech blog.
+    
+    English Title: ${title}
+    English Content: ${content}
+    
+    Return the result strictly as a JSON object with keys "title_bn" and "excerpt_bn". Do not add Markdown code blocks.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const responseText = response.text;
+    if (!responseText) return null;
+
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error("Translation Error:", error);
+    return null;
   }
 };

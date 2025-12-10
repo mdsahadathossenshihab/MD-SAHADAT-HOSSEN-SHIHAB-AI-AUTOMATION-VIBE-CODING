@@ -2,15 +2,23 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, X, Loader2, Sparkles } from 'lucide-react';
 import { sendMessageToGemini } from '../services/geminiService';
 import { ChatMessage, GeminiChatProps } from '../types';
+import { translations } from '../utils/translations';
 
-export const GeminiChat: React.FC<GeminiChatProps> = ({ onAdminTrigger }) => {
+export const GeminiChat: React.FC<GeminiChatProps> = ({ onAdminTrigger, language }) => {
+  const t = translations[language].chat;
+
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: "Hello! I am Shihab's AI Assistant. Ask me about his automation services or SaaS projects.", timestamp: new Date() }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Reset greeting when language changes or initially
+    setMessages([
+      { role: 'model', text: t.greeting, timestamp: new Date() }
+    ]);
+  }, [language]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,10 +78,10 @@ export const GeminiChat: React.FC<GeminiChatProps> = ({ onAdminTrigger }) => {
               <Sparkles size={16} className="text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-sm">Shihab's Assistant</h3>
+              <h3 className="font-bold text-slate-900 text-sm">{t.header}</h3>
               <p className="text-xs text-slate-500 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
-                Online
+                {t.online}
               </p>
             </div>
           </div>
@@ -97,7 +105,7 @@ export const GeminiChat: React.FC<GeminiChatProps> = ({ onAdminTrigger }) => {
               <div className="flex justify-start">
                 <div className="bg-slate-50 p-3 rounded-2xl rounded-bl-none flex items-center gap-2 border border-slate-100">
                   <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                  <span className="text-xs text-slate-400">Thinking...</span>
+                  <span className="text-xs text-slate-400">{t.thinking}</span>
                 </div>
               </div>
             )}
@@ -112,7 +120,7 @@ export const GeminiChat: React.FC<GeminiChatProps> = ({ onAdminTrigger }) => {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Ask a question or enter admin command..."
+                placeholder={t.input_placeholder}
                 className="flex-1 bg-transparent border-none text-slate-900 text-sm px-4 py-2 focus:ring-0 placeholder:text-slate-400 outline-none"
               />
               <button 

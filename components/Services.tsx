@@ -1,31 +1,34 @@
 import React from 'react';
-import { Code2, Bot, MessageSquare, Workflow, Zap, Layers } from 'lucide-react';
-import { Service } from '../types';
+import { Code2, Bot, MessageSquare, Workflow, Zap } from 'lucide-react';
+import { Service, ServicesProps } from '../types';
+import { translations } from '../utils/translations';
 
-const services: Service[] = [
-  {
-    title: "Vibe Coding",
-    description: "Rapid, AI-assisted development. I build fast, sleek web apps using Cursor, React & Tailwind.",
-    icon: Code2
-  },
-  {
-    title: "n8n Automation",
-    description: "Complex business logic automation. Connect Supabase, Stripe, Gmail without writing boilerplate.",
-    icon: Workflow
-  },
-  {
-    title: "AI Chatbots",
-    description: "Custom knowledge-base chatbots trained on your data to handle support 24/7.",
-    icon: MessageSquare
-  },
-  {
-    title: "Autonomous Agents",
-    description: "Self-operating AI agents that can browse the web, scrape data, and perform actions.",
-    icon: Bot
-  }
-];
+export const Services: React.FC<ServicesProps> = ({ language }) => {
+  const t = translations[language].services;
 
-export const Services: React.FC = () => {
+  const services: Service[] = [
+    {
+      title: t.items[0].title,
+      description: t.items[0].description,
+      icon: Code2
+    },
+    {
+      title: t.items[1].title,
+      description: t.items[1].description,
+      icon: Workflow
+    },
+    {
+      title: t.items[2].title,
+      description: t.items[2].description,
+      icon: MessageSquare
+    },
+    {
+      title: t.items[3].title,
+      description: t.items[3].description,
+      icon: Bot
+    }
+  ];
+
   return (
     <section id="services" className="py-12 relative z-10">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
@@ -35,13 +38,13 @@ export const Services: React.FC = () => {
           
           <div className="text-center mb-16">
             <span className="text-indigo-600 font-bold tracking-widest text-xs uppercase bg-indigo-50 px-4 py-2 rounded-full mb-6 inline-block">
-              Expertise
+              {t.badge}
             </span>
             <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">
-              Solutions that <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-500">Scale</span>
+              {t.title} <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-500">{t.title_accent}</span>
             </h2>
             <p className="text-slate-500 max-w-2xl mx-auto text-lg leading-relaxed">
-              I combine visual automation with custom code to deliver robust systems faster than traditional agencies.
+              {t.subtitle}
             </p>
           </div>
 
@@ -64,7 +67,7 @@ export const Services: React.FC = () => {
                 </p>
 
                 <div className="mt-6 flex items-center gap-2 text-sm font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">
-                  <span>Learn more</span>
+                  <span>{t.learn_more}</span>
                   <Zap size={14} className="group-hover:fill-indigo-500" />
                 </div>
               </div>

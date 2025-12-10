@@ -1,7 +1,11 @@
 import React from 'react';
 import { ArrowRight, Zap, Globe, Smartphone, Terminal, Sparkles, MessageSquare, Database, Linkedin, Facebook, Twitter } from 'lucide-react';
+import { HeroProps } from '../types';
+import { translations } from '../utils/translations';
 
-export const Hero: React.FC = () => {
+export const Hero: React.FC<HeroProps> = ({ language }) => {
+  const t = translations[language].hero;
+
   const handleContact = () => {
     window.location.href = "mailto:shihabno.18@gmail.com";
   };
@@ -22,12 +26,12 @@ export const Hero: React.FC = () => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
             </span>
-            n8n Automation Expert
+            {t.badge}
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-8xl tracking-tight leading-[0.95] mb-8 text-slate-900 font-black">
-            <span className="block text-slate-400 text-4xl md:text-6xl mb-2">MD SAHADAT</span>
-            <span className="block">HOSSEN</span>
+            <span className="block text-slate-400 text-4xl md:text-6xl mb-2">{t.name_prefix}</span>
+            <span className="block">{t.name_middle}</span>
             <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-blue-600 animate-shimmer bg-[length:200%_auto]">
               SHIHAB.
             </span>
@@ -37,12 +41,12 @@ export const Hero: React.FC = () => {
             <div className="flex items-center gap-4">
                <div className="h-1 w-12 bg-indigo-600 rounded-full"></div>
                <p className="font-mono text-indigo-700 font-bold text-sm tracking-widest uppercase">
-                 AI Automation & Vibe Coding
+                 {t.role}
                </p>
             </div>
             
             <p className="text-xl text-slate-600 leading-relaxed max-w-lg font-medium">
-              Architecting <span className="text-slate-900 font-bold underline decoration-indigo-300 decoration-2 underline-offset-4">autonomous workflows</span>. I connect n8n, AI Agents, and Apps to deliver instant results to your customers.
+              {t.description}
             </p>
           </div>
 
@@ -53,7 +57,7 @@ export const Hero: React.FC = () => {
             >
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative flex items-center gap-3">
-                Let's Automate
+                {t.cta_automate}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </span>
             </button>
@@ -62,13 +66,13 @@ export const Hero: React.FC = () => {
               href="#services"
               className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold text-lg rounded-2xl shadow-sm hover:bg-indigo-50 hover:border-indigo-100 hover:text-indigo-700 transition-all"
             >
-              Explore Services
+              {t.cta_explore}
             </a>
           </div>
 
           {/* Social Links */}
           <div className="flex items-center gap-6">
-             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Connect</span>
+             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.connect}</span>
              <div className="h-px w-8 bg-slate-200"></div>
              <div className="flex gap-4">
                 <a 
@@ -119,7 +123,7 @@ export const Hero: React.FC = () => {
                     <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                     <div className="w-3 h-3 rounded-full bg-green-400"></div>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">n8n Workflow</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.workflow_card.title}</span>
                 </div>
 
                 {/* Nodes */}
@@ -134,18 +138,18 @@ export const Hero: React.FC = () => {
                       <div className="w-16 h-16 bg-white rounded-2xl shadow-lg border-2 border-emerald-400 flex items-center justify-center hover:scale-110 transition-transform">
                         <Globe className="text-emerald-500" size={24} />
                       </div>
-                      <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-100">Webhook</span>
+                      <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-100">{t.workflow_card.webhook}</span>
                    </div>
 
                    {/* Node 2: Agent */}
                    <div className="flex flex-col items-center gap-3 relative">
                       <div className="absolute -top-10 bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-bounce shadow-lg shadow-indigo-300">
-                        Processing...
+                        {t.workflow_card.processing}
                       </div>
                       <div className="w-20 h-20 bg-slate-900 rounded-2xl shadow-2xl border-4 border-indigo-500 flex items-center justify-center z-10 hover:scale-110 transition-transform">
                          <Zap className="text-yellow-400 fill-yellow-400" size={32} />
                       </div>
-                      <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">AI Agent</span>
+                      <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">{t.workflow_card.agent}</span>
                    </div>
 
                    {/* Node 3: Result/Client */}
@@ -153,7 +157,7 @@ export const Hero: React.FC = () => {
                       <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-lg border-2 border-white flex items-center justify-center hover:scale-110 transition-transform">
                         <Database className="text-white" size={24} />
                       </div>
-                      <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-100">Database</span>
+                      <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-100">{t.workflow_card.database}</span>
                    </div>
                 </div>
 
@@ -168,7 +172,7 @@ export const Hero: React.FC = () => {
                    </div>
                    <div className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                     200 OK
+                     {t.workflow_card.success}
                    </div>
                 </div>
               </div>
@@ -203,7 +207,7 @@ export const Hero: React.FC = () => {
                  {/* Cursor Effect */}
                  <div className="mt-3 flex items-center gap-2 bg-indigo-500/20 p-2 rounded border border-indigo-500/30">
                     <MessageSquare size={10} className="text-indigo-400" />
-                    <span className="text-indigo-300">Code generated.</span>
+                    <span className="text-indigo-300">{t.workflow_card.code_generated}</span>
                  </div>
               </div>
            </div>
